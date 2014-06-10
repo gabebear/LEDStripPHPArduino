@@ -1,0 +1,122 @@
+<html>
+	<head>
+		<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+		<meta http-equiv="Pragma" content="no-cache" />
+		<meta http-equiv="Expires" content="0" />
+		<script type="text/javascript">
+			function base64ForRGB(r, g, b) {
+				var encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+				var chunk = (r << 16) | (b << 8) | g;
+				return encodings[(chunk & 16515072)>>18] + encodings[(chunk & 258048)>>12] + encodings[(chunk & 4032)>>6] + encodings[chunk&63];
+			}
+			
+			function setPixels(data) {
+				var xhReq = new XMLHttpRequest();
+				xhReq.open("GET", "led.php?a="+data, false);
+				xhReq.send(null);
+			}
+			
+			function setOnePixel(pixel, r, g, b) {
+				setPixels(Array(pixel+1).join(base64ForRGB(0,0,0))+base64ForRGB(r, g, b));
+			}
+		</script>
+	</head>
+	<body>
+		<br>
+		Pull to light single LED
+		<form action="led.php" method="get">
+			<input type="range" min="0" max="100" onchange="setOnePixel(this.value|0,0,255,0)" style="width:100%">
+		</form>
+		<br>
+		<hr>
+		Arduino Code:
+		<hr>
+		<div id = "scoped-content">
+			<style type = "text/css" scoped>
+				p {margin: 0.0px 0.0px 0.0px 0.0px; font: 11.0px Menlo}
+				p.p1 {color: #d12f1b}
+				p.p2 {min-height: 13.0px}
+				p.p3 {color: #008400}
+				p.p4 {color: #78492a}
+				p.p5 {}
+				p.p6 {color: #4f8187}
+				span.s1 {color: #78492a}
+				span.s2 {color: #272ad8}
+				span.s3 {color: #bb2ca2}
+				span.s4 {color: #d12f1b}
+				span.s5 {color: #000000}
+			</style>
+			<p class="p1"><span class="s1">#include </span>&lt;Adafruit_NeoPixel.h&gt;</p>
+			<p class="p2"><br></p>
+			<p class="p3">// number of pixels in array</p>
+			<p class="p4">#define NUM_PIXELS <span class="s2">100</span></p>
+			<p class="p2"><br></p>
+			<p class="p3">// the sentinal is sent from the server before updating the array to help synch everything</p>
+			<p class="p5"><span class="s3">const</span> <span class="s3">char</span> sentinal[] = <span class="s4">"gabe"</span>;</p>
+			<p class="p2"><br></p>
+			<p class="p5">Adafruit_NeoPixel strip = Adafruit_NeoPixel(<span class="s1">NUM_PIXELS</span>, <span class="s2">6</span>, NEO_GRB + NEO_KHZ400);</p>
+			<p class="p2"><br></p>
+			<p class="p5"><span class="s3">int</span> sentinalLength, curIndex;</p>
+			<p class="p2"><br></p>
+			<p class="p5"><span class="s3">void</span> setup() {</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;</span>strip.begin();</p>
+			<p class="p3"><span class="s5">&nbsp;&nbsp;&nbsp;&nbsp;</span>strip.show(); </span>// Initialize all pixels to 'off'</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;</span>Serial.begin(<span class="s2">1000000</span>);</p>
+			<p class="p6"><span class="s5">&nbsp;&nbsp;&nbsp;&nbsp;</span></span>sentinalLength<span class="s5"> = (</span><span class="s3">sizeof</span><span class="s5">(</span>sentinal<span class="s5">)/</span><span class="s3">sizeof</span><span class="s5">(</span><span class="s3">char</span><span class="s5">))-</span><span class="s2">1</span><span class="s5">;</span></p>
+			<p class="p6"><span class="s5">&nbsp;&nbsp;&nbsp;&nbsp;</span></span>curIndex<span class="s5"> = -</span>sentinalLength<span class="s5">;</span></p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;</span>Serial.print(sentinalLength);</p>
+			<p class="p5">}</p>
+			<p class="p2"><br></p>
+			<p class="p3">// first we check if the we see the sentinal in the byte stream</p>
+			<p class="p3">// after seeing the sentinal we take in enough bytes to fill up the LED array with color</p>
+			<p class="p5"><span class="s3">void</span> loop() {</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="s3">while</span> (Serial.available()) {</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="s3">int</span> data = Serial.read();</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="s3">if</span>(curIndex&lt;<span class="s2">0</span>) {</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="s3">if</span>(data==sentinal[sentinalLength+curIndex]) {</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>curIndex++;</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>} <span class="s3">else</span> {</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>curIndex=-sentinalLength;</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>}</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>} <span class="s3">else</span> {</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="s3">static</span> uint8_t colorIndex = <span class="s2">0</span>;</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="s3">static</span> uint8_t colorChan[<span class="s2">3</span>];</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>colorChan[colorIndex] = data;</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>colorIndex++;</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="s3">if</span>(colorIndex==<span class="s2">3</span>) {</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>strip.setPixelColor(curIndex, colorChan[<span class="s2">0</span>], colorChan[<span class="s2">1</span>], colorChan[<span class="s2">2</span>]);</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>colorIndex = <span class="s2">0</span>;</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>curIndex++;</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="s3">if</span>(curIndex==<span class="s1">NUM_PIXELS</span>) {</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>strip.show();</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>curIndex=-sentinalLength;</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>}</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>}</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>}</p>
+			<p class="p5">&nbsp;&nbsp;&nbsp;&nbsp;</span>}</p>
+			<p class="p5">}</p>
+			<br><br>
+			<hr>
+			led.php
+			<hr>
+			<p class="p1">&lt;?php</p>
+			<p class="p2">//disable all caching so it actually sends each time</p>
+			<p class="p3"><span class="s1">header(</span>'Cache-Control: no-cache, no-store, must-revalidate'<span class="s1">);</span></p>
+			<p class="p3"><span class="s1">header(</span>'Pragma: no-cache'<span class="s1">);</span></p>
+			<p class="p3"><span class="s1">header(</span>'Expires: 0'<span class="s1">);</span></p>
+			<p class="p1">error_reporting(E_ALL);</p>
+			<p class="p3"><span class="s1">ini_set(</span>'display_errors'<span class="s1">, </span>'1'<span class="s1">);</span></p>
+			<p class="p4"><span class="s1">include </span>"php_serial.class.php"<span class="s1">;</span></p>
+			<p class="p1">$serial = new phpSerial;</p>
+			<p class="p1">$serial-&gt;deviceSet(<span class="s2">"/dev/ttyACM0"</span>);</p>
+			<p class="p1">$serial-&gt;confBaudRate(<span class="s3">1000000</span>);</p>
+			<p class="p1">$serial-&gt;confParity(<span class="s2">"none"</span>);</p>
+			<p class="p1">$serial-&gt;confCharacterLength(<span class="s3">8</span>);</p>
+			<p class="p1">$serial-&gt;confStopBits(<span class="s3">1</span>);</p>
+			<p class="p1">$serial-&gt;deviceOpen();</p>
+			<p class="p1">$serial-&gt;sendMessage(<span class="s2">"gabe"</span>.str_pad(base64_decode($_GET[<span class="s2">"a"</span>]),<span class="s3">300</span>,<span class="s2">"\0"</span>));</p>
+			<p class="p1">$serial-&gt;deviceClose();</p>
+			<p class="p1">?&gt;</p>
+		</div>
+	</body>
+</html>
